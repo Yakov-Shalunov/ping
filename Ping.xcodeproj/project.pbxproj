@@ -19,6 +19,7 @@
 		80DEE61E16F74D14E4911A8D /* ContactMethod.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C58D118007ECC532689C965 /* ContactMethod.swift */; };
 		910420C23ABF39C15990E3FE /* PeopleListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F76BBFB172E2F74C0066F14C /* PeopleListView.swift */; };
 		994817F795B6966A52599D63 /* Contact.swift in Sources */ = {isa = PBXBuildFile; fileRef = 097B217CC4655EB413589673 /* Contact.swift */; };
+		9D39F03C390FD0DF47C9C292 /* ContactPullIn.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29EAE31A28A91024CA03439D /* ContactPullIn.swift */; };
 		AD7E7E1969206BC4EA1201B9 /* ContactWriteBack.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2D6E0B9548ACEE6D8886B816 /* ContactWriteBack.swift */; };
 		AEAB91B80F77384196D3E1E6 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 94C15EE4B0E0E8AF78B57678 /* ContentView.swift */; };
 		B17F8A3D21AA4B98D481C621 /* FieldStatus.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E2A2DDEB3A288ADD3525E2C /* FieldStatus.swift */; };
@@ -36,6 +37,7 @@
 		149DB87EF1C4E4E44C7E0F18 /* ImportContactsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImportContactsView.swift; sourceTree = "<group>"; };
 		1F60C40BE4595C96B01E3C03 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		28B2B129CA79583F95552881 /* CheckIn.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CheckIn.swift; sourceTree = "<group>"; };
+		29EAE31A28A91024CA03439D /* ContactPullIn.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContactPullIn.swift; sourceTree = "<group>"; };
 		2D6E0B9548ACEE6D8886B816 /* ContactWriteBack.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContactWriteBack.swift; sourceTree = "<group>"; };
 		3C58D118007ECC532689C965 /* ContactMethod.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContactMethod.swift; sourceTree = "<group>"; };
 		3DA880F2F95E7A8888B44297 /* CalendarSyncManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarSyncManager.swift; sourceTree = "<group>"; };
@@ -50,7 +52,7 @@
 		B5C8F83E9CBB7B5717E22773 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		D06A44A28C076EC0A997CE9D /* ContactMapView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContactMapView.swift; sourceTree = "<group>"; };
 		D949B6025B784510744C5421 /* TidyUpView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TidyUpView.swift; sourceTree = "<group>"; };
-		DB4BE060956FB1ACEAC2591B /* Ping.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Ping.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		DB4BE060956FB1ACEAC2591B /* Ping.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Ping.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		DBB13156A86F53B49E13EA9D /* PersonRowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PersonRowView.swift; sourceTree = "<group>"; };
 		F76BBFB172E2F74C0066F14C /* PeopleListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PeopleListView.swift; sourceTree = "<group>"; };
 		F7DD9D4337004D4575FF0FC3 /* PingApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PingApp.swift; sourceTree = "<group>"; };
@@ -136,6 +138,7 @@
 			isa = PBXGroup;
 			children = (
 				3DA880F2F95E7A8888B44297 /* CalendarSyncManager.swift */,
+				29EAE31A28A91024CA03439D /* ContactPullIn.swift */,
 				2D6E0B9548ACEE6D8886B816 /* ContactWriteBack.swift */,
 				FEC96833C6003E2C8FB870F6 /* Geocoder.swift */,
 			);
@@ -196,7 +199,7 @@
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = YES;
-				LastUpgradeCheck = 2640;
+				LastUpgradeCheck = 1430;
 				TargetAttributes = {
 					F11C4A8E12EA5159899C95F5 = {
 						DevelopmentTeam = REDACTED;
@@ -246,6 +249,7 @@
 				994817F795B6966A52599D63 /* Contact.swift in Sources */,
 				7B436E62BD2D5445D422E1BC /* ContactMapView.swift in Sources */,
 				80DEE61E16F74D14E4911A8D /* ContactMethod.swift in Sources */,
+				9D39F03C390FD0DF47C9C292 /* ContactPullIn.swift in Sources */,
 				AD7E7E1969206BC4EA1201B9 /* ContactWriteBack.swift in Sources */,
 				AEAB91B80F77384196D3E1E6 /* ContentView.swift in Sources */,
 				B17F8A3D21AA4B98D481C621 /* FieldStatus.swift in Sources */,
@@ -274,7 +278,7 @@
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEAD_CODE_STRIPPING = YES;
+				DEVELOPMENT_TEAM = REDACTED;
 				INFOPLIST_FILE = Ping/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -303,7 +307,7 @@
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEAD_CODE_STRIPPING = YES;
+				DEVELOPMENT_TEAM = REDACTED;
 				INFOPLIST_FILE = Ping/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -357,12 +361,9 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = dwarf;
-				DEVELOPMENT_TEAM = REDACTED;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
-				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_NO_COMMON_BLOCKS = YES;
@@ -384,7 +385,6 @@
 				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = auto;
-				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 5.0;
@@ -425,12 +425,9 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
-				DEVELOPMENT_TEAM = REDACTED;
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
-				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
 				GCC_NO_COMMON_BLOCKS = YES;
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
@@ -445,7 +442,6 @@
 				MTL_FAST_MATH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = auto;
-				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_COMPILATION_MODE = wholemodule;
 				SWIFT_OPTIMIZATION_LEVEL = "-O";
 				SWIFT_VERSION = 5.0;

@@ -79,7 +79,7 @@ struct SettingsView: View {
     @ViewBuilder
     private var contactsWriteBackSection: some View {
         Section {
-            Toggle("Sync Changes to Contacts", isOn: $contactWriteBackEnabled)
+            Toggle("Sync with Contacts", isOn: $contactWriteBackEnabled)
                 .onChange(of: contactWriteBackEnabled) { _, enabled in
                     if enabled {
                         Task {
@@ -120,7 +120,7 @@ struct SettingsView: View {
         } header: {
             Text("Contacts")
         } footer: {
-            Text("When enabled, edits to imported contacts and new contacts created in Ping will be synced back to the Contacts app.")
+            Text("When enabled, changes sync both ways: edits and new contacts in Ping sync to the Contacts app, and changes or new contacts in the Contacts app are automatically pulled into Ping on launch.")
         }
         .confirmationDialog(
             "Sync All Contacts",
@@ -139,23 +139,33 @@ struct SettingsView: View {
     private func performSyncAll() {
         syncAllInProgress = true
         syncAllResult = nil
-        let writeBack = ContactWriteBack()
-        var synced = 0
-        var failed = 0
-        for contact in activeContacts {
-            do {
-                let identifier = try writeBack.writeBack(contact)
-                if contact.importedContactID == nil {
-                    contact.importedContactID = identifier
+        Task {
+            // Pull in changes from system Contacts first
+            let pullIn = ContactPullIn()
+            let pullResult = await pullIn.pullIn(context: modelContext)
+
+            // Then write back Ping changes to system Contacts
+            let writeBack = ContactWriteBack()
+            var synced = 0
+            var failed = 0
+            // Re-fetch active contacts since pull-in may have added new ones
+            let descriptor = FetchDescriptor<Contact>(predicate: #Predicate { !$0.isArchived })
+            let currentContacts = (try? modelContext.fetch(descriptor)) ?? []
+            for contact in currentContacts {
+                do {
+                    let identifier = try writeBack.writeBack(contact)
+                    if contact.importedContactID == nil {
+                        contact.importedContactID = identifier
+                    }
+                    synced += 1
+                } catch {
+                    failed += 1
                 }
-                synced += 1
-            } catch {
-                failed += 1
             }
+            try? modelContext.save()
+            syncAllResult = (synced: synced + pullResult.created, failed: failed)
+            syncAllInProgress = false
         }
-        try? modelContext.save()
-        syncAllResult = (synced: synced, failed: failed)
-        syncAllInProgress = false
     }
 
     // MARK: - Calendar Section

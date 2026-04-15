@@ -7,6 +7,7 @@ struct ContentView: View {
     @Query(filter: #Predicate<Contact> { !$0.isArchived }, sort: \Contact.firstName) private var contacts: [Contact]
     @AppStorage("globalCheckInIntervalDays") private var globalDefault = 30
     @AppStorage("calendarSyncEnabled") private var calendarSyncEnabled = false
+    @AppStorage("contactWriteBackEnabled") private var contactSyncEnabled = false
 
     private var overdueCount: Int {
         var count = 0
@@ -46,6 +47,15 @@ struct ContentView: View {
             // Sync calendar on launch if enabled
             if calendarSyncEnabled && calendarSync.isAuthorized {
                 calendarSync.syncAll(context: modelContext, globalDefault: globalDefault)
+            }
+        }
+        .task {
+            // Pull in changes from system Contacts on launch if sync enabled
+            if contactSyncEnabled {
+                let pullIn = ContactPullIn()
+                if pullIn.isAuthorized {
+                    await pullIn.pullIn(context: modelContext)
+                }
             }
         }
     }
