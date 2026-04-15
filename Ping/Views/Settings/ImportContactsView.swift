@@ -157,74 +157,65 @@ private enum ImportBadge: Equatable {
 
 private struct PhoneContactRow: View, Equatable {
     let contact: PhoneContact
-    let isSelected: Bool
     let badge: ImportBadge
-    let onTap: () -> Void
 
     static func == (lhs: PhoneContactRow, rhs: PhoneContactRow) -> Bool {
-        lhs.contact.id == rhs.contact.id && lhs.isSelected == rhs.isSelected && lhs.badge == rhs.badge
+        lhs.contact.id == rhs.contact.id && lhs.badge == rhs.badge
     }
 
     var body: some View {
-        Button(action: onTap) {
-            HStack(spacing: 12) {
-                Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
-                    .foregroundStyle(isSelected ? Color.accentColor : .secondary)
-                    .font(.title3)
-
-                if let data = contact.thumbnailData, let img = PlatformImage(data: data) {
-                    Image(platformImage: img)
-                        .resizable()
-                        .scaledToFill()
-                        .frame(width: 36, height: 36)
-                        .clipShape(Circle())
-                } else {
-                    Circle()
-                        .fill(Color.accentColor.opacity(0.15))
-                        .frame(width: 36, height: 36)
-                        .overlay {
-                            Text(contact.displayName.prefix(1).uppercased())
-                                .font(.system(size: 14, weight: .medium))
-                                .foregroundStyle(Color.accentColor)
-                        }
-                }
-
-                VStack(alignment: .leading, spacing: 1) {
-                    Text(contact.displayName)
-                        .font(.body)
-                        .foregroundStyle(.primary)
-                    if !contact.subtitle.isEmpty {
-                        Text(contact.subtitle)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
+        HStack(spacing: 12) {
+            if let data = contact.thumbnailData, let img = PlatformImage(data: data) {
+                Image(platformImage: img)
+                    .resizable()
+                    .scaledToFill()
+                    .frame(width: 36, height: 36)
+                    .clipShape(Circle())
+            } else {
+                Circle()
+                    .fill(Color.accentColor.opacity(0.15))
+                    .frame(width: 36, height: 36)
+                    .overlay {
+                        Text(contact.displayName.prefix(1).uppercased())
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundStyle(Color.accentColor)
                     }
-                }
+            }
 
-                Spacer()
-
-                switch badge {
-                case .imported:
-                    Text("Imported")
-                        .font(.caption2)
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 2)
-                        .background(Color.green.opacity(0.15))
-                        .foregroundStyle(.green)
-                        .clipShape(Capsule())
-                case .archived:
-                    Text("Archived")
-                        .font(.caption2)
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 2)
-                        .background(Color.orange.opacity(0.15))
-                        .foregroundStyle(.orange)
-                        .clipShape(Capsule())
-                case .none:
-                    EmptyView()
+            VStack(alignment: .leading, spacing: 1) {
+                Text(contact.displayName)
+                    .font(.body)
+                    .foregroundStyle(.primary)
+                if !contact.subtitle.isEmpty {
+                    Text(contact.subtitle)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
                 }
             }
+
+            Spacer()
+
+            switch badge {
+            case .imported:
+                Text("Imported")
+                    .font(.caption2)
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 2)
+                    .background(Color.green.opacity(0.15))
+                    .foregroundStyle(.green)
+                    .clipShape(Capsule())
+            case .archived:
+                Text("Archived")
+                    .font(.caption2)
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 2)
+                    .background(Color.orange.opacity(0.15))
+                    .foregroundStyle(.orange)
+                    .clipShape(Capsule())
+            case .none:
+                EmptyView()
+            }
         }
-        .buttonStyle(.plain)
     }
 }
 
@@ -370,7 +361,7 @@ struct ImportContactsView: View {
                 ProgressView("Loading contacts...")
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
-                List {
+                List(selection: $selectedIDs) {
                     if !newContacts.isEmpty {
                         Section {
                             ForEach(newContacts) { pc in
@@ -422,6 +413,9 @@ struct ImportContactsView: View {
                         }
                     }
                 }
+                #if os(iOS)
+                .environment(\.editMode, .constant(.active))
+                #endif
                 .searchable(text: $searchText, prompt: "Search contacts...")
 
                 // Bottom bar
@@ -453,17 +447,7 @@ struct ImportContactsView: View {
     private func phoneContactRow(_ pc: PhoneContact) -> some View {
         let badge: ImportBadge = archivedContactIDs.contains(pc.id) ? .archived
             : activeContactIDs.contains(pc.id) ? .imported : .none
-        return PhoneContactRow(
-            contact: pc,
-            isSelected: selectedIDs.contains(pc.id),
-            badge: badge
-        ) {
-            if selectedIDs.contains(pc.id) {
-                selectedIDs.remove(pc.id)
-            } else {
-                selectedIDs.insert(pc.id)
-            }
-        }
+        return PhoneContactRow(contact: pc, badge: badge)
     }
 
     private var allNewSelected: Bool {
