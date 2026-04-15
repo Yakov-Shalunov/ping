@@ -302,7 +302,7 @@ struct ArchivedContactsView: View {
                     Spacer()
                 }
                 .swipeActions(edge: .leading) {
-                    Button {
+                    Button(role: .destructive) {
                         contact.isArchived = false
                         contact.updatedAt = Date()
                     } label: {

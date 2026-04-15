@@ -3,7 +3,7 @@ import SwiftData
 
 struct PeopleListView: View {
     @Environment(\.modelContext) private var modelContext
-    @Query(filter: #Predicate<Contact> { !$0.isArchived }, sort: \Contact.firstName) private var contacts: [Contact]
+    @Query(filter: #Predicate<Contact> { !$0.isArchived }, sort: [SortDescriptor(\Contact.firstName, comparator: .localized)]) private var contacts: [Contact]
     @Query(sort: \Tag.name) private var allTags: [Tag]
     @AppStorage("globalCheckInIntervalDays") private var globalDefault = 30
 
