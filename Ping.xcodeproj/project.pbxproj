@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		08BA3A4CFE60D702980A779A /* PersonDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 95FB557DDC2F94CDA8FC7F8D /* PersonDetailView.swift */; };
 		26C57B77BA7A0B77B0B6AB11 /* PingApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7DD9D4337004D4575FF0FC3 /* PingApp.swift */; };
+		3AE68EB11F222F3BB3021AC7 /* SaveErrorManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 715E413CC8EDCA7C6FE8D49C /* SaveErrorManager.swift */; };
 		3C47F809A28C96479BD466B1 /* PersonRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DBB13156A86F53B49E13EA9D /* PersonRowView.swift */; };
 		4043586F26DDE38DBD14E474 /* ImportContactsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 149DB87EF1C4E4E44C7E0F18 /* ImportContactsView.swift */; };
 		4127D4B069997DB44F047E7C /* CalendarSyncManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3DA880F2F95E7A8888B44297 /* CalendarSyncManager.swift */; };
@@ -44,6 +45,7 @@
 		5860B55A3869F586C8F7B102 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		613AD432FE15B931675AB69F /* CheckInsListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CheckInsListView.swift; sourceTree = "<group>"; };
 		62FF5DD13CEF21723FF7761C /* AddEditContactView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddEditContactView.swift; sourceTree = "<group>"; };
+		715E413CC8EDCA7C6FE8D49C /* SaveErrorManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SaveErrorManager.swift; sourceTree = "<group>"; };
 		85A477F6A5F2B100E51FCC57 /* Tag.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tag.swift; sourceTree = "<group>"; };
 		94C15EE4B0E0E8AF78B57678 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		95FB557DDC2F94CDA8FC7F8D /* PersonDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PersonDetailView.swift; sourceTree = "<group>"; };
@@ -52,7 +54,7 @@
 		B5C8F83E9CBB7B5717E22773 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		D06A44A28C076EC0A997CE9D /* ContactMapView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContactMapView.swift; sourceTree = "<group>"; };
 		D949B6025B784510744C5421 /* TidyUpView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TidyUpView.swift; sourceTree = "<group>"; };
-		DB4BE060956FB1ACEAC2591B /* Ping.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Ping.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		DB4BE060956FB1ACEAC2591B /* Ping.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Ping.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		DBB13156A86F53B49E13EA9D /* PersonRowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PersonRowView.swift; sourceTree = "<group>"; };
 		F76BBFB172E2F74C0066F14C /* PeopleListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PeopleListView.swift; sourceTree = "<group>"; };
 		F7DD9D4337004D4575FF0FC3 /* PingApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PingApp.swift; sourceTree = "<group>"; };
@@ -141,6 +143,7 @@
 				29EAE31A28A91024CA03439D /* ContactPullIn.swift */,
 				2D6E0B9548ACEE6D8886B816 /* ContactWriteBack.swift */,
 				FEC96833C6003E2C8FB870F6 /* Geocoder.swift */,
+				715E413CC8EDCA7C6FE8D49C /* SaveErrorManager.swift */,
 			);
 			path = Utilities;
 			sourceTree = "<group>";
@@ -260,6 +263,7 @@
 				08BA3A4CFE60D702980A779A /* PersonDetailView.swift in Sources */,
 				3C47F809A28C96479BD466B1 /* PersonRowView.swift in Sources */,
 				26C57B77BA7A0B77B0B6AB11 /* PingApp.swift in Sources */,
+				3AE68EB11F222F3BB3021AC7 /* SaveErrorManager.swift in Sources */,
 				704D3B0BDCDBB83325C09C15 /* SettingsView.swift in Sources */,
 				F89C9C41188360BFA89FBD21 /* Tag.swift in Sources */,
 				70779F06E787321AD404D4F2 /* TidyUpView.swift in Sources */,
@@ -274,6 +278,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CLANG_USE_OPTIMIZATION_PROFILE = YES;
 				CODE_SIGN_ENTITLEMENTS = Ping/Ping.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
@@ -303,6 +308,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CLANG_USE_OPTIMIZATION_PROFILE = YES;
 				CODE_SIGN_ENTITLEMENTS = Ping/Ping.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
@@ -367,7 +373,7 @@
 				GCC_C_LANGUAGE_STANDARD = gnu11;
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_NO_COMMON_BLOCKS = YES;
-				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_OPTIMIZATION_LEVEL = s;
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					"$(inherited)",
 					"DEBUG=1",

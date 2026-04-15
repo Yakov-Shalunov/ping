@@ -5,6 +5,7 @@ import MapKit
 struct AddEditContactView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
+    @Environment(SaveErrorManager.self) private var saveErrorManager
     @Query(sort: \Tag.name) private var allTags: [Tag]
 
     let contact: Contact?
@@ -302,77 +303,91 @@ struct AddEditContactView: View {
     }
 
     private func save() {
-        let target: Contact
-        if let existing = contact {
-            target = existing
-        } else {
-            target = Contact()
-            modelContext.insert(target)
-        }
+        // Capture all form state so the view can dismiss immediately
+        let contactRef = contact
+        let ctx = modelContext
+        let sm = saveErrorManager
+        let fn = firstName, ln = lastName, nn = nickname, n = notes
+        let ciw = checkInWeeks, cid = checkInDisabled
+        let aff = affiliations.filter { !$0.trimmingCharacters(in: .whitespaces).isEmpty }
+        let locs = locations, phs = phones, ems = emails, socs = socials
+        let selectedTags = allTags.filter { selectedTagIDs.contains($0.id) }
+        let wbEnabled = contactWriteBackEnabled
 
-        target.firstName = firstName
-        target.lastName = lastName
-        target.nickname = nickname.isEmpty ? nil : nickname
-        target.notes = notes.isEmpty ? nil : notes
-        target.checkInIntervalDays = checkInWeeks.map { $0 * 7 }
-        target.checkInDisabled = checkInDisabled
-        target.affiliations = affiliations.filter { !$0.trimmingCharacters(in: .whitespaces).isEmpty }
-        target.updatedAt = Date()
+        let displayName: String = {
+            let full = [fn, ln].filter { !$0.isEmpty }.joined(separator: " ")
+            if !full.isEmpty { return full }
+            if !nn.isEmpty { return nn }
+            return "Contact"
+        }()
 
-        // Sync locations
-        let existingLocations = target.locations ?? []
-        for loc in existingLocations {
-            modelContext.delete(loc)
-        }
-        target.locations = []
-        for draft in locations where !draft.label.isEmpty {
-            let loc = Location(label: draft.label, address: draft.address.isEmpty ? nil : draft.address,
-                               latitude: draft.latitude, longitude: draft.longitude)
-            loc.contact = target
-            target.locations?.append(loc)
-        }
+        dismiss()
 
-        // Sync contact methods
-        let existingMethods = target.contactMethods ?? []
-        for m in existingMethods {
-            modelContext.delete(m)
-        }
-        target.contactMethods = []
-        for draft in phones where !draft.value.isEmpty {
-            let m = ContactMethod(type: .phone, value: draft.value, label: draft.label.isEmpty ? nil : draft.label)
-            m.contact = target
-            target.contactMethods?.append(m)
-        }
-        for draft in emails where !draft.value.isEmpty {
-            let m = ContactMethod(type: .email, value: draft.value, label: draft.label.isEmpty ? nil : draft.label)
-            m.contact = target
-            target.contactMethods?.append(m)
-        }
-        for draft in socials where !draft.value.isEmpty {
-            let m = ContactMethod(type: .social, value: draft.value, platform: draft.platform.isEmpty ? nil : draft.platform)
-            m.contact = target
-            target.contactMethods?.append(m)
-        }
+        sm.backgroundSave(ctx, contactName: displayName) {
+            let target: Contact
+            if let existing = contactRef {
+                target = existing
+            } else {
+                target = Contact()
+                ctx.insert(target)
+            }
 
-        // Sync tags
-        target.tags = allTags.filter { selectedTagIDs.contains($0.id) }
+            target.firstName = fn
+            target.lastName = ln
+            target.nickname = nn.isEmpty ? nil : nn
+            target.notes = n.isEmpty ? nil : n
+            target.checkInIntervalDays = ciw.map { $0 * 7 }
+            target.checkInDisabled = cid
+            target.affiliations = aff
+            target.updatedAt = Date()
 
-        // Write back to system Contacts app if enabled
-        if contactWriteBackEnabled {
-            let writeBack = ContactWriteBack()
-            if writeBack.isAuthorized {
-                do {
-                    let identifier = try writeBack.writeBack(target)
-                    if target.importedContactID == nil {
-                        target.importedContactID = identifier
+            // Sync locations
+            for loc in target.locations ?? [] { ctx.delete(loc) }
+            target.locations = []
+            for draft in locs where !draft.label.isEmpty {
+                let loc = Location(label: draft.label, address: draft.address.isEmpty ? nil : draft.address,
+                                   latitude: draft.latitude, longitude: draft.longitude)
+                loc.contact = target
+                target.locations?.append(loc)
+            }
+
+            // Sync contact methods
+            for m in target.contactMethods ?? [] { ctx.delete(m) }
+            target.contactMethods = []
+            for draft in phs where !draft.value.isEmpty {
+                let m = ContactMethod(type: .phone, value: draft.value, label: draft.label.isEmpty ? nil : draft.label)
+                m.contact = target
+                target.contactMethods?.append(m)
+            }
+            for draft in ems where !draft.value.isEmpty {
+                let m = ContactMethod(type: .email, value: draft.value, label: draft.label.isEmpty ? nil : draft.label)
+                m.contact = target
+                target.contactMethods?.append(m)
+            }
+            for draft in socs where !draft.value.isEmpty {
+                let m = ContactMethod(type: .social, value: draft.value, platform: draft.platform.isEmpty ? nil : draft.platform)
+                m.contact = target
+                target.contactMethods?.append(m)
+            }
+
+            // Sync tags
+            target.tags = selectedTags
+
+            // Write back to system Contacts app if enabled
+            if wbEnabled {
+                let writeBack = ContactWriteBack()
+                if writeBack.isAuthorized {
+                    do {
+                        let identifier = try writeBack.writeBack(target)
+                        if target.importedContactID == nil {
+                            target.importedContactID = identifier
+                        }
+                    } catch {
+                        // Silently fail — the Ping save still succeeds
                     }
-                } catch {
-                    // Silently fail — the Ping save still succeeds
                 }
             }
         }
-
-        dismiss()
     }
 
     private func addNewTag() {

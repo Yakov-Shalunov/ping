@@ -200,7 +200,9 @@ private struct CheckInRow: View {
 // MARK: - Snooze Sheet
 
 struct SnoozeSheet: View {
+    @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
+    @Environment(SaveErrorManager.self) private var saveErrorManager
     @EnvironmentObject private var calendarSync: CalendarSyncManager
     @AppStorage("calendarSyncEnabled") private var calendarSyncEnabled = false
     @AppStorage("globalCheckInIntervalDays") private var globalDefault = 30
@@ -245,11 +247,23 @@ struct SnoozeSheet: View {
     }
 
     private func snooze(days: Int) {
-        contact.snoozedUntil = Calendar.current.date(byAdding: .day, value: days, to: Date())
-        contact.updatedAt = Date()
-        if calendarSyncEnabled {
-            calendarSync.syncContact(contact, globalDefault: globalDefault)
-        }
+        let ctx = modelContext
+        let sm = saveErrorManager
+        let contactRef = contact
+        let contactName = contact.displayName
+        let snoozeDate = Calendar.current.date(byAdding: .day, value: days, to: Date())
+        let syncEnabled = calendarSyncEnabled
+        let sync = calendarSync
+        let gd = globalDefault
+
         dismiss()
+
+        sm.backgroundSave(ctx, contactName: contactName) {
+            contactRef.snoozedUntil = snoozeDate
+            contactRef.updatedAt = Date()
+            if syncEnabled {
+                sync.syncContact(contactRef, globalDefault: gd)
+            }
+        }
     }
 }

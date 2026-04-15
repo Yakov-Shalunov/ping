@@ -82,6 +82,7 @@ struct TidyUpCardFlow: View {
     @State private var contacts: [Contact]
 
     @Environment(\.modelContext) private var modelContext
+    @Environment(SaveErrorManager.self) private var saveErrorManager
     @State private var currentIndex = 0
     @State private var skippedCount = 0
 
@@ -174,13 +175,13 @@ struct TidyUpCardFlow: View {
     private func fieldInput(for contact: Contact) -> some View {
         switch field {
         case .location:
-            LocationTidyCard(contact: contact) { advance() }
+            LocationTidyCard(contact: contact) { mutation in advanceAndSave(for: contact, applying: mutation) }
         case .email:
-            MethodTidyCard(contact: contact, methodType: .email, prompt: "Email address") { advance() }
+            MethodTidyCard(contact: contact, methodType: .email, prompt: "Email address") { mutation in advanceAndSave(for: contact, applying: mutation) }
         case .phone:
-            MethodTidyCard(contact: contact, methodType: .phone, prompt: "Phone number") { advance() }
+            MethodTidyCard(contact: contact, methodType: .phone, prompt: "Phone number") { mutation in advanceAndSave(for: contact, applying: mutation) }
         case .checkInSchedule:
-            ScheduleTidyCard(contact: contact) { advance() }
+            ScheduleTidyCard(contact: contact) { mutation in advanceAndSave(for: contact, applying: mutation) }
         }
     }
 
@@ -195,11 +196,19 @@ struct TidyUpCardFlow: View {
         }
     }
 
-    private func markNA(_ contact: Contact) {
-        let status = FieldStatus(fieldName: field.rawValue, status: .notApplicable)
-        status.contact = contact
-        contact.fieldStatuses?.append(status)
+    private func advanceAndSave(for contact: Contact, applying mutation: @escaping () -> Void) {
+        let name = contact.displayName
         advance()
+        saveErrorManager.backgroundSave(modelContext, contactName: name, applying: mutation)
+    }
+
+    private func markNA(_ contact: Contact) {
+        let fieldRaw = field.rawValue
+        advanceAndSave(for: contact) {
+            let status = FieldStatus(fieldName: fieldRaw, status: .notApplicable)
+            status.contact = contact
+            contact.fieldStatuses?.append(status)
+        }
     }
 }
 
@@ -207,8 +216,7 @@ struct TidyUpCardFlow: View {
 
 private struct LocationTidyCard: View {
     let contact: Contact
-    let onSave: () -> Void
-    @Environment(\.modelContext) private var modelContext
+    let onSave: (@escaping () -> Void) -> Void
     @State private var draft = LocationDraft()
 
     var body: some View {
@@ -230,12 +238,14 @@ private struct LocationTidyCard: View {
 
             Button("Save & Next") {
                 guard !draft.label.isEmpty else { return }
-                let loc = Location(label: draft.label, address: draft.address.isEmpty ? nil : draft.address,
-                                   latitude: draft.latitude, longitude: draft.longitude)
-                loc.contact = contact
-                contact.locations?.append(loc)
-                contact.updatedAt = Date()
-                onSave()
+                let label = draft.label, address = draft.address, lat = draft.latitude, lng = draft.longitude
+                onSave {
+                    let loc = Location(label: label, address: address.isEmpty ? nil : address,
+                                       latitude: lat, longitude: lng)
+                    loc.contact = contact
+                    contact.locations?.append(loc)
+                    contact.updatedAt = Date()
+                }
             }
             .buttonStyle(.borderedProminent)
             .disabled(draft.label.isEmpty)
@@ -247,8 +257,7 @@ private struct MethodTidyCard: View {
     let contact: Contact
     let methodType: ContactMethodType
     let prompt: String
-    let onSave: () -> Void
-    @Environment(\.modelContext) private var modelContext
+    let onSave: (@escaping () -> Void) -> Void
     @State private var value = ""
 
     var body: some View {
@@ -271,11 +280,14 @@ private struct MethodTidyCard: View {
 
             Button("Save & Next") {
                 guard !value.isEmpty else { return }
-                let method = ContactMethod(type: methodType, value: value)
-                method.contact = contact
-                contact.contactMethods?.append(method)
-                contact.updatedAt = Date()
-                onSave()
+                let val = value
+                let mt = methodType
+                onSave {
+                    let method = ContactMethod(type: mt, value: val)
+                    method.contact = contact
+                    contact.contactMethods?.append(method)
+                    contact.updatedAt = Date()
+                }
             }
             .buttonStyle(.borderedProminent)
             .disabled(value.isEmpty)
@@ -285,7 +297,7 @@ private struct MethodTidyCard: View {
 
 private struct ScheduleTidyCard: View {
     let contact: Contact
-    let onSave: () -> Void
+    let onSave: (@escaping () -> Void) -> Void
     @State private var weeks: Int = 4
 
     var body: some View {
@@ -307,16 +319,19 @@ private struct ScheduleTidyCard: View {
             #endif
 
             Button("Save & Next") {
-                contact.checkInIntervalDays = weeks * 7
-                contact.updatedAt = Date()
-                onSave()
+                let w = weeks
+                onSave {
+                    contact.checkInIntervalDays = w * 7
+                    contact.updatedAt = Date()
+                }
             }
             .buttonStyle(.borderedProminent)
 
             Button("Disable check-ins") {
-                contact.checkInDisabled = true
-                contact.updatedAt = Date()
-                onSave()
+                onSave {
+                    contact.checkInDisabled = true
+                    contact.updatedAt = Date()
+                }
             }
             .foregroundStyle(.secondary)
         }

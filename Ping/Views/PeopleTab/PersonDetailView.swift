@@ -232,6 +232,7 @@ struct PersonDetailView: View {
 struct LogCheckInSheet: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
+    @Environment(SaveErrorManager.self) private var saveErrorManager
     @EnvironmentObject private var calendarSync: CalendarSyncManager
     @AppStorage("calendarSyncEnabled") private var calendarSyncEnabled = false
     @AppStorage("globalCheckInIntervalDays") private var globalDefault = 30
@@ -282,23 +283,28 @@ struct LogCheckInSheet: View {
     }
 
     private func save() {
-        let checkIn = CheckIn(
-            date: date,
-            type: type,
-            note: note.isEmpty ? nil : note
-        )
-        checkIn.contact = contact
-        contact.checkIns?.append(checkIn)
-        // Clear snooze when logging a check-in
-        contact.snoozedUntil = nil
-        contact.updatedAt = Date()
-
-        // Sync calendar event for this contact
-        if calendarSyncEnabled {
-            calendarSync.syncContact(contact, globalDefault: globalDefault)
-        }
+        let ctx = modelContext
+        let sm = saveErrorManager
+        let contactRef = contact
+        let contactName = contact.displayName
+        let d = date, t = type, n = note
+        let syncEnabled = calendarSyncEnabled
+        let sync = calendarSync
+        let gd = globalDefault
 
         dismiss()
+
+        sm.backgroundSave(ctx, contactName: contactName) {
+            let checkIn = CheckIn(date: d, type: t, note: n.isEmpty ? nil : n)
+            checkIn.contact = contactRef
+            contactRef.checkIns?.append(checkIn)
+            contactRef.snoozedUntil = nil
+            contactRef.updatedAt = Date()
+
+            if syncEnabled {
+                sync.syncContact(contactRef, globalDefault: gd)
+            }
+        }
     }
 }
 
