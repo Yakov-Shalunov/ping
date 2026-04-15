@@ -422,7 +422,6 @@ struct ImportContactsView: View {
                         }
                     }
                 }
-                .animation(.default, value: fetcher.phoneContacts.map(\.id))
                 .searchable(text: $searchText, prompt: "Search contacts...")
 
                 // Bottom bar

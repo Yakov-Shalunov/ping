@@ -73,11 +73,16 @@ struct TidyUpView: View {
 
 struct TidyUpCardFlow: View {
     let field: TrackedField
-    let contacts: [Contact]
+    @State private var contacts: [Contact]
 
     @Environment(\.modelContext) private var modelContext
     @State private var currentIndex = 0
     @State private var skippedCount = 0
+
+    init(field: TrackedField, contacts: [Contact]) {
+        self.field = field
+        self._contacts = State(initialValue: contacts)
+    }
 
     private var currentContact: Contact? {
         guard currentIndex < contacts.count else { return nil }
