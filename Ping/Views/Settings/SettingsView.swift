@@ -61,6 +61,8 @@ struct SettingsView: View {
         .navigationTitle("Settings")
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
+        #else
+        .formStyle(.grouped)
         #endif
         .toolbar {
             ToolbarItem(placement: .confirmationAction) {

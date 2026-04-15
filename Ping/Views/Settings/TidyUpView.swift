@@ -2,24 +2,26 @@ import SwiftUI
 import SwiftData
 
 struct TidyUpView: View {
-    @Query(filter: #Predicate<Contact> { !$0.isArchived }, sort: \Contact.firstName) private var contacts: [Contact]
+    @Query(filter: #Predicate<Contact> { !$0.isArchived }, sort: [SortDescriptor(\Contact.firstName, comparator: .localized)]) private var contacts: [Contact]
 
-    private var totalFields: Int {
-        contacts.count * TrackedField.allCases.count
-    }
-
-    private var filledFields: Int {
-        totalFields - TrackedField.allCases.reduce(0) { total, field in
-            total + contacts.filter { field.isMissing(for: $0) }.count
+    /// Single-pass computation of all missing-field data.
+    private var fieldStats: (missingByField: [(field: TrackedField, contacts: [Contact])], totalMissing: Int) {
+        var result: [(field: TrackedField, contacts: [Contact])] = []
+        var totalMissing = 0
+        for field in TrackedField.allCases {
+            let missing = contacts.filter { field.isMissing(for: $0) }
+            result.append((field, missing))
+            totalMissing += missing.count
         }
-    }
-
-    private var completionPercent: Double {
-        guard totalFields > 0 else { return 1 }
-        return Double(filledFields) / Double(totalFields)
+        return (result, totalMissing)
     }
 
     var body: some View {
+        let stats = fieldStats
+        let totalFields = contacts.count * TrackedField.allCases.count
+        let filledFields = totalFields - stats.totalMissing
+        let completionPercent = totalFields > 0 ? Double(filledFields) / Double(totalFields) : 1.0
+
         List {
             Section {
                 VStack(spacing: 8) {
@@ -35,29 +37,28 @@ struct TidyUpView: View {
             }
 
             Section("Missing Fields") {
-                ForEach(TrackedField.allCases) { field in
-                    let missing = contacts.filter { field.isMissing(for: $0) }
-                    if !missing.isEmpty {
+                ForEach(stats.missingByField, id: \.field) { entry in
+                    if !entry.contacts.isEmpty {
                         NavigationLink {
-                            TidyUpCardFlow(field: field, contacts: missing)
+                            TidyUpCardFlow(field: entry.field, contacts: entry.contacts)
                         } label: {
                             Label {
                                 HStack {
-                                    Text(field.label)
+                                    Text(entry.field.label)
                                     Spacer()
-                                    Text("\(missing.count) missing")
+                                    Text("\(entry.contacts.count) missing")
                                         .font(.caption)
                                         .foregroundStyle(.secondary)
                                 }
                             } icon: {
-                                Image(systemName: field.systemImage)
+                                Image(systemName: entry.field.systemImage)
                             }
                         }
                     }
                 }
             }
 
-            if TrackedField.allCases.allSatisfy({ field in contacts.allSatisfy { !field.isMissing(for: $0) } }) {
+            if stats.totalMissing == 0 {
                 ContentUnavailableView {
                     Label("All Done", systemImage: "checkmark.circle")
                 } description: {
@@ -66,6 +67,11 @@ struct TidyUpView: View {
             }
         }
         .navigationTitle("Tidy Up")
+        #if os(iOS)
+        .navigationBarTitleDisplayMode(.inline)
+        #else
+        .listStyle(.inset)
+        #endif
     }
 }
 

@@ -9,68 +9,70 @@ struct CheckInsListView: View {
     @State private var showingLogSheet: Contact?
     @State private var showingSnoozeSheet: Contact?
 
-    private var scheduledContacts: [Contact] {
-        contacts.filter { $0.hasExplicitSchedule }
-    }
+    /// Single-pass bucketing of all contacts into check-in sections.
+    private var sections: CheckInSections {
+        var overdue: [(contact: Contact, daysOverdue: Int)] = []
+        var thisWeek: [(contact: Contact, dueDate: Date)] = []
+        var upcoming: [(contact: Contact, dueDate: Date)] = []
+        var maybeReachOut: [(contact: Contact, anchor: Date)] = []
 
-    private var overdueContacts: [Contact] {
-        scheduledContacts
-            .filter { ($0.daysOverdue(globalDefault: globalDefault) ?? 0) > 0 }
-            .sorted { ($0.daysOverdue(globalDefault: globalDefault) ?? 0) > ($1.daysOverdue(globalDefault: globalDefault) ?? 0) }
-    }
+        let now = Date()
+        let calendar = Calendar.current
 
-    private var thisWeekContacts: [Contact] {
-        scheduledContacts.filter {
-            guard let days = $0.daysOverdue(globalDefault: globalDefault) else { return false }
-            return days <= 0 && days >= -7
+        for contact in contacts {
+            if contact.checkInDisabled { continue }
+
+            if contact.hasExplicitSchedule {
+                guard let days = contact.daysOverdue(globalDefault: globalDefault) else { continue }
+                if days > 0 {
+                    overdue.append((contact, days))
+                } else if days >= -7 {
+                    let due = contact.nextDueDate(globalDefault: globalDefault) ?? .distantFuture
+                    thisWeek.append((contact, due))
+                } else if days >= -21 {
+                    let due = contact.nextDueDate(globalDefault: globalDefault) ?? .distantFuture
+                    upcoming.append((contact, due))
+                }
+            } else {
+                let anchor = contact.lastCheckIn?.date ?? contact.createdAt
+                let daysSince = calendar.dateComponents([.day], from: anchor, to: now).day ?? 0
+                if daysSince >= globalDefault {
+                    maybeReachOut.append((contact, anchor))
+                }
+            }
         }
-        .sorted { ($0.nextDueDate(globalDefault: globalDefault) ?? .distantFuture) < ($1.nextDueDate(globalDefault: globalDefault) ?? .distantFuture) }
+
+        return CheckInSections(
+            overdue: overdue.sorted { $0.daysOverdue > $1.daysOverdue }.map(\.contact),
+            thisWeek: thisWeek.sorted { $0.dueDate < $1.dueDate }.map(\.contact),
+            upcoming: upcoming.sorted { $0.dueDate < $1.dueDate }.map(\.contact),
+            maybeReachOut: maybeReachOut.sorted { $0.anchor < $1.anchor }.map(\.contact)
+        )
     }
 
-    private var upcomingContacts: [Contact] {
-        scheduledContacts.filter {
-            guard let days = $0.daysOverdue(globalDefault: globalDefault) else { return false }
-            return days < -7 && days >= -21
-        }
-        .sorted { ($0.nextDueDate(globalDefault: globalDefault) ?? .distantFuture) < ($1.nextDueDate(globalDefault: globalDefault) ?? .distantFuture) }
-    }
-
-    /// Contacts without an explicit schedule that are past the global default
-    private var maybeReachOut: [Contact] {
-        contacts.filter { contact in
-            guard !contact.checkInDisabled else { return false }
-            guard !contact.hasExplicitSchedule else { return false }
-            let anchor = contact.lastCheckIn?.date ?? contact.createdAt
-            let daysSince = Calendar.current.dateComponents([.day], from: anchor, to: Date()).day ?? 0
-            return daysSince >= globalDefault
-        }
-        .sorted {
-            let aDate = $0.lastCheckIn?.date ?? $0.createdAt
-            let bDate = $1.lastCheckIn?.date ?? $1.createdAt
-            return aDate < bDate
-        }
-    }
-
-    /// Total overdue count for the tab badge
-    var overdueCount: Int {
-        overdueContacts.count
+    private struct CheckInSections {
+        let overdue: [Contact]
+        let thisWeek: [Contact]
+        let upcoming: [Contact]
+        let maybeReachOut: [Contact]
     }
 
     var body: some View {
+        let s = sections
         NavigationStack {
             List {
-                if !overdueContacts.isEmpty {
-                    checkInSection("Overdue", contacts: overdueContacts, tint: .red, showSnooze: true)
+                if !s.overdue.isEmpty {
+                    checkInSection("Overdue", contacts: s.overdue, tint: .red, showSnooze: true)
                 }
-                if !thisWeekContacts.isEmpty {
-                    checkInSection("This Week", contacts: thisWeekContacts, tint: .orange, showSnooze: true)
+                if !s.thisWeek.isEmpty {
+                    checkInSection("This Week", contacts: s.thisWeek, tint: .orange, showSnooze: true)
                 }
-                if !upcomingContacts.isEmpty {
-                    checkInSection("Next 2 Weeks", contacts: upcomingContacts, tint: .blue, showSnooze: true)
+                if !s.upcoming.isEmpty {
+                    checkInSection("Next 2 Weeks", contacts: s.upcoming, tint: .blue, showSnooze: true)
                 }
-                if !maybeReachOut.isEmpty {
+                if !s.maybeReachOut.isEmpty {
                     Section {
-                        ForEach(maybeReachOut) { contact in
+                        ForEach(s.maybeReachOut) { contact in
                             CheckInRow(contact: contact, globalDefault: globalDefault, showScheduleHint: true)
                                 .swipeActions(edge: .trailing) {
                                     Button("Done") { showingLogSheet = contact }
@@ -81,14 +83,14 @@ struct CheckInsListView: View {
                         HStack {
                             Text("Maybe Reach Out")
                             Spacer()
-                            Text("\(maybeReachOut.count)")
+                            Text("\(s.maybeReachOut.count)")
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                         }
                     }
                 }
 
-                if overdueContacts.isEmpty && thisWeekContacts.isEmpty && upcomingContacts.isEmpty && maybeReachOut.isEmpty {
+                if s.overdue.isEmpty && s.thisWeek.isEmpty && s.upcoming.isEmpty && s.maybeReachOut.isEmpty {
                     ContentUnavailableView {
                         Label("All Caught Up", systemImage: "checkmark.circle")
                     } description: {
@@ -96,7 +98,6 @@ struct CheckInsListView: View {
                     }
                 }
             }
-            .animation(.default, value: contacts.map(\.id))
             .navigationTitle("Check-ins")
             .navigationDestination(for: Contact.self) { contact in
                 PersonDetailView(contact: contact)

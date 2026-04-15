@@ -267,6 +267,8 @@ struct LogCheckInSheet: View {
             .navigationTitle("Log Check-in")
             #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
+            #else
+            .formStyle(.grouped)
             #endif
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {

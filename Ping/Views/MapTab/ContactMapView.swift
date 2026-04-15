@@ -4,7 +4,7 @@ import MapKit
 
 struct ContactMapView: View {
     @Environment(\.modelContext) private var modelContext
-    @Query(filter: #Predicate<Contact> { !$0.isArchived }, sort: \Contact.firstName) private var contacts: [Contact]
+    @Query(filter: #Predicate<Contact> { !$0.isArchived }, sort: [SortDescriptor(\Contact.firstName, comparator: .localized)]) private var contacts: [Contact]
     @Query(sort: \Tag.name) private var allTags: [Tag]
 
     @State private var searchText = ""
@@ -15,58 +15,22 @@ struct ContactMapView: View {
     @State private var isSearching = false
     @State private var showingLogCheckIn: Contact?
 
-    private var visibleLocations: [Location] {
-        var locs = contacts.flatMap { $0.locations ?? [] }
-
-        // Filter out locations with no coordinates (not yet geocoded)
-        locs = locs.filter { $0.latitude != 0 || $0.longitude != 0 }
-
-        if !selectedTagIDs.isEmpty {
-            locs = locs.filter { loc in
-                guard let contact = loc.contact else { return false }
-                let contactTagIDs = Set((contact.tags ?? []).map(\.id))
-                return !selectedTagIDs.isDisjoint(with: contactTagIDs)
-            }
-        }
-
-        return locs
-    }
-
-    private var uniqueContactCount: Int {
-        Set(visibleLocations.compactMap { $0.contact?.id }).count
-    }
-
     var body: some View {
         NavigationStack {
             ZStack(alignment: .top) {
-                Map(position: $mapPosition, selection: $selectedLocation) {
-                    ForEach(visibleLocations) { location in
-                        Marker(
-                            location.contact?.displayName ?? location.label,
-                            coordinate: location.coordinate
-                        )
-                        .tag(location)
-                    }
-                }
-                .mapControls {
-                    MapUserLocationButton()
-                    MapCompass()
-                    MapScaleView()
-                }
+                FilteredMapContent(
+                    contacts: contacts,
+                    selectedTagIDs: selectedTagIDs,
+                    mapPosition: $mapPosition,
+                    selectedLocation: $selectedLocation
+                )
 
                 VStack(spacing: 8) {
                     searchBar
                     if !allTags.isEmpty {
                         tagFilterBar
                     }
-                    if uniqueContactCount > 0 {
-                        Text("\(uniqueContactCount) contact\(uniqueContactCount == 1 ? "" : "s") \u{00B7} \(visibleLocations.count) location\(visibleLocations.count == 1 ? "" : "s")")
-                            .font(.caption)
-                            .padding(.horizontal, 10)
-                            .padding(.vertical, 4)
-                            .background(.ultraThinMaterial)
-                            .clipShape(Capsule())
-                    }
+                    MapStatsOverlay(contacts: contacts, selectedTagIDs: selectedTagIDs)
                 }
                 .padding(.horizontal)
                 .padding(.top, 8)
@@ -261,6 +225,130 @@ struct ContactMapView: View {
         )
         withAnimation {
             mapPosition = .region(region)
+        }
+    }
+}
+
+// MARK: - Filtered Map Content (isolated from search state)
+
+/// A location paired with a display coordinate (possibly offset from the real coordinate to avoid overlap).
+private struct PlottedLocation: Identifiable {
+    let location: Location
+    let displayCoordinate: CLLocationCoordinate2D
+    var id: UUID { location.id }
+}
+
+/// Extracted so that search-bar keystrokes don't trigger location filtering.
+private struct FilteredMapContent: View {
+    let contacts: [Contact]
+    let selectedTagIDs: Set<UUID>
+    @Binding var mapPosition: MapCameraPosition
+    @Binding var selectedLocation: Location?
+
+    /// Spacing between spiral points in meters.
+    private static let spacingMeters: Double = 30.0
+    /// Golden angle in radians for Fibonacci spiral.
+    private static let goldenAngle: Double = .pi * (3.0 - sqrt(5.0))
+
+    private var plottedLocations: [PlottedLocation] {
+        let filterByTags = !selectedTagIDs.isEmpty
+        var locs: [Location] = []
+
+        for contact in contacts {
+            if filterByTags {
+                let contactTagIDs = Set((contact.tags ?? []).map(\.id))
+                if selectedTagIDs.isDisjoint(with: contactTagIDs) { continue }
+            }
+            for loc in contact.locations ?? [] {
+                guard loc.latitude != 0 || loc.longitude != 0 else { continue }
+                locs.append(loc)
+            }
+        }
+
+        // Group by exact coordinates
+        struct CoordinateKey: Hashable { let lat: Double; let lon: Double }
+        let groups = Dictionary(grouping: locs) { CoordinateKey(lat: $0.latitude, lon: $0.longitude) }
+
+        var result: [PlottedLocation] = []
+        for (_, group) in groups {
+            if group.count == 1 {
+                result.append(PlottedLocation(location: group[0], displayCoordinate: group[0].coordinate))
+            } else {
+                let center = group[0].coordinate
+                let latDegreesPerMeter = 1.0 / 111_111.0
+                let lonDegreesPerMeter = 1.0 / (111_111.0 * cos(center.latitude * .pi / 180.0))
+
+                for (i, loc) in group.enumerated() {
+                    let n = Double(i)
+                    let angle = n * Self.goldenAngle
+                    let radius = Self.spacingMeters * sqrt(n)
+                    let offsetLat = radius * cos(angle) * latDegreesPerMeter
+                    let offsetLon = radius * sin(angle) * lonDegreesPerMeter
+                    let coord = CLLocationCoordinate2D(
+                        latitude: center.latitude + offsetLat,
+                        longitude: center.longitude + offsetLon
+                    )
+                    result.append(PlottedLocation(location: loc, displayCoordinate: coord))
+                }
+            }
+        }
+        return result
+    }
+
+    var body: some View {
+        Map(position: $mapPosition, selection: $selectedLocation) {
+            ForEach(plottedLocations) { plotted in
+                Marker(
+                    plotted.location.contact?.displayName ?? plotted.location.label,
+                    coordinate: plotted.displayCoordinate
+                )
+                .tag(plotted.location)
+            }
+        }
+        .mapControls {
+            MapUserLocationButton()
+            MapCompass()
+            MapScaleView()
+        }
+    }
+}
+
+/// Separate view for the stats badge so it also skips recomputation on search keystrokes.
+private struct MapStatsOverlay: View {
+    let contacts: [Contact]
+    let selectedTagIDs: Set<UUID>
+
+    private var stats: (contactCount: Int, locationCount: Int) {
+        let filterByTags = !selectedTagIDs.isEmpty
+        var contactCount = 0
+        var locationCount = 0
+
+        for contact in contacts {
+            if filterByTags {
+                let contactTagIDs = Set((contact.tags ?? []).map(\.id))
+                if selectedTagIDs.isDisjoint(with: contactTagIDs) { continue }
+            }
+            var hasLocation = false
+            for loc in contact.locations ?? [] {
+                guard loc.latitude != 0 || loc.longitude != 0 else { continue }
+                locationCount += 1
+                hasLocation = true
+            }
+            if hasLocation { contactCount += 1 }
+        }
+
+        return (contactCount, locationCount)
+    }
+
+    var body: some View {
+        let s = stats
+        if s.contactCount > 0 {
+            Text("\(s.contactCount) contact\(s.contactCount == 1 ? "" : "s") \u{00B7} \(s.locationCount) location\(s.locationCount == 1 ? "" : "s")")
+                .font(.caption)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 4)
+                .background(.ultraThinMaterial)
+                .clipShape(Capsule())
         }
     }
 }

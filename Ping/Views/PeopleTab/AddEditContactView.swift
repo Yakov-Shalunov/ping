@@ -50,6 +50,8 @@ struct AddEditContactView: View {
             .navigationTitle(contact == nil ? "Add Contact" : "Edit Contact")
             #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
+            #else
+            .formStyle(.grouped)
             #endif
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {

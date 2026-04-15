@@ -89,7 +89,6 @@ struct PeopleListView: View {
                     }
                 }
             }
-            .animation(.default, value: contacts.map(\.id))
             .searchable(text: $searchText, prompt: "Search contacts...")
             .navigationTitle("People")
             .navigationDestination(for: Contact.self) { contact in
@@ -139,6 +138,9 @@ struct PeopleListView: View {
                 NavigationStack {
                     SettingsView()
                 }
+                #if os(macOS)
+                .frame(minWidth: 500, minHeight: 500)
+                #endif
             }
             .overlay {
                 if contacts.isEmpty {
@@ -155,13 +157,8 @@ struct PeopleListView: View {
     }
 
     private func archiveContact(_ contact: Contact) {
-        // Delay mutation so the swipe animation finishes before the row is
-        // removed from the filtered list, avoiding a UICollectionView
-        // internal inconsistency warning.
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-            contact.isArchived = true
-            contact.updatedAt = Date()
-        }
+        contact.isArchived = true
+        contact.updatedAt = Date()
     }
 }
 

@@ -9,10 +9,15 @@ struct ContentView: View {
     @AppStorage("calendarSyncEnabled") private var calendarSyncEnabled = false
 
     private var overdueCount: Int {
-        contacts.filter { contact in
-            contact.hasExplicitSchedule
-            && (contact.daysOverdue(globalDefault: globalDefault) ?? 0) > 0
-        }.count
+        var count = 0
+        for contact in contacts {
+            if contact.hasExplicitSchedule,
+               let days = contact.daysOverdue(globalDefault: globalDefault),
+               days > 0 {
+                count += 1
+            }
+        }
+        return count
     }
 
     var body: some View {
