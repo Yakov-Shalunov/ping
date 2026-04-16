@@ -5,7 +5,7 @@ A personal iOS/macOS app for managing a network of 50–200 people. Core feature
 
 ## Tech Stack
 - **SwiftUI** — all UI, multiplatform (iOS primary, macOS secondary)
-- **SwiftData** — local persistence (CloudKit sync planned but not yet wired)
+- **SwiftData** — local persistence with CloudKit sync
 - **MapKit** — map view with city search
 - **EventKit** — calendar sync to dedicated "Ping Check-ins" calendar
 - **Contacts framework** — import from phone contacts
@@ -13,10 +13,9 @@ A personal iOS/macOS app for managing a network of 50–200 people. Core feature
 
 ## Building
 ```bash
-xcodegen generate   # regenerate .xcodeproj from project.yml
-xcodebuild -project Ping.xcodeproj -scheme Ping -destination 'platform=macOS' CODE_SIGNING_ALLOWED=NO build
-# or for iOS:
-xcodebuild -project Ping.xcodeproj -scheme Ping -destination 'platform=iOS Simulator,name=iPhone 16' CODE_SIGNING_ALLOWED=NO build
+cp env.sh.example env.sh  # first time only — fill in your DEVELOPMENT_TEAM
+./build.sh                # builds for macOS
+./build.sh iOS            # builds for iOS Simulator
 ```
 Both iOS and macOS SDKs are installed.
 
@@ -74,9 +73,9 @@ App settings (globalCheckInIntervalDays, calendarSyncEnabled) use `@AppStorage`,
 - [x] Tidy Up card flow for missing fields (location, email, phone, schedule)
 - [x] EventKit calendar sync (dedicated calendar, sync on launch/check-in/snooze)
 - [x] Settings with calendar authorization flow, sync status, import entry
+- [x] CloudKit sync (SwiftData with `.cloudKitDatabase(.automatic)`)
 
 ### Not Yet Built
-- [ ] CloudKit sync (SwiftData ModelConfiguration with `.cloudKitDatabase(.automatic)`)
 - [ ] macOS polish (currently builds but may have layout issues)
 - [ ] Calendar-aware trips (read travel events, surface nearby contacts)
 - [ ] Share sheet extension (save social links from Safari)
