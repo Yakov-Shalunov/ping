@@ -116,8 +116,12 @@ final class ContactPullIn {
 
     // MARK: - Update Existing
 
+    /// Applies changes from a system contact onto an existing Ping contact.
+    /// Overwrites names, fills in missing photo/company/addresses, and adds any new
+    /// phones/emails/socials. Shared between automatic pull-in and manual import.
     /// Returns true if any changes were made.
-    private func updateExistingContact(_ contact: Contact, from pc: PhoneContact) -> Bool {
+    @discardableResult
+    func updateExistingContact(_ contact: Contact, from pc: PhoneContact) -> Bool {
         var changed = false
 
         // Update name if changed in system contacts
@@ -194,7 +198,9 @@ final class ContactPullIn {
 
     // MARK: - Create New
 
-    private func createNewContact(from pc: PhoneContact, in context: ModelContext) {
+    /// Creates a new Ping contact from a system contact. Shared between
+    /// automatic pull-in and manual import.
+    func createNewContact(from pc: PhoneContact, in context: ModelContext) {
         let contact = Contact(firstName: pc.firstName, lastName: pc.lastName,
                               nickname: pc.nickname.isEmpty ? nil : pc.nickname)
         contact.importedContactID = pc.id

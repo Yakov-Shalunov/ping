@@ -557,13 +557,19 @@ struct ImportContactsView: View {
         var newCount = 0
         var updateCount = 0
 
+        let pullIn = ContactPullIn()
         let allExisting = activeContacts + archivedContacts
         for pc in selected {
             if let existing = allExisting.first(where: { $0.importedContactID == pc.id }) {
-                updateExistingContact(existing, from: pc)
+                // Manual re-import should unarchive; auto pull-in does not.
+                if existing.isArchived {
+                    existing.isArchived = false
+                    existing.updatedAt = Date()
+                }
+                pullIn.updateExistingContact(existing, from: pc)
                 updateCount += 1
             } else {
-                createNewContact(from: pc)
+                pullIn.createNewContact(from: pc, in: modelContext)
                 newCount += 1
             }
         }
@@ -579,101 +585,5 @@ struct ImportContactsView: View {
             let geocoder = LocationGeocoder()
             await geocoder.geocodeMissingLocations(in: modelContext)
         }
-    }
-
-    private func createNewContact(from pc: PhoneContact) {
-        let contact = Contact(firstName: pc.firstName, lastName: pc.lastName,
-                              nickname: pc.nickname.isEmpty ? nil : pc.nickname)
-        contact.importedContactID = pc.id
-        contact.photoData = pc.imageData ?? pc.thumbnailData
-        contact.notes = pc.note.isEmpty ? nil : pc.note
-        if !pc.company.isEmpty {
-            contact.affiliations = [pc.company]
-        }
-
-        // Phone numbers
-        for phone in pc.phones {
-            let method = ContactMethod(type: .phone, value: phone.value, label: phone.label)
-            method.contact = contact
-            contact.contactMethods?.append(method)
-        }
-
-        // Emails
-        for email in pc.emails {
-            let method = ContactMethod(type: .email, value: email.value, label: email.label)
-            method.contact = contact
-            contact.contactMethods?.append(method)
-        }
-
-        // Social profiles
-        for social in pc.socialProfiles where !social.value.isEmpty {
-            let method = ContactMethod(type: .social, value: social.value, platform: social.platform)
-            method.contact = contact
-            contact.contactMethods?.append(method)
-        }
-
-        // Addresses → locations (text only, no geocoding yet — user can fix in Tidy Up)
-        for addr in pc.addresses where !addr.formatted.isEmpty {
-            let loc = Location(label: addr.label ?? "Address", address: addr.formatted)
-            loc.contact = contact
-            contact.locations?.append(loc)
-        }
-
-        modelContext.insert(contact)
-    }
-
-    private func updateExistingContact(_ contact: Contact, from pc: PhoneContact) {
-        // Unarchive if re-importing
-        contact.isArchived = false
-
-        // Update photo if we don't have one
-        if contact.photoData == nil {
-            contact.photoData = pc.imageData ?? pc.thumbnailData
-        }
-
-        // Add any new phone numbers we don't already have
-        let existingPhones = Set((contact.contactMethods ?? []).filter { $0.type == .phone }.map(\.value))
-        for phone in pc.phones where !existingPhones.contains(phone.value) {
-            let method = ContactMethod(type: .phone, value: phone.value, label: phone.label)
-            method.contact = contact
-            contact.contactMethods?.append(method)
-        }
-
-        // Add any new emails we don't already have
-        let existingEmails = Set((contact.contactMethods ?? []).filter { $0.type == .email }.map(\.value))
-        for email in pc.emails where !existingEmails.contains(email.value) {
-            let method = ContactMethod(type: .email, value: email.value, label: email.label)
-            method.contact = contact
-            contact.contactMethods?.append(method)
-        }
-
-        // Add new social profiles
-        let existingSocials = Set((contact.contactMethods ?? []).filter { $0.type == .social }.map(\.value))
-        for social in pc.socialProfiles where !social.value.isEmpty && !existingSocials.contains(social.value) {
-            let method = ContactMethod(type: .social, value: social.value, platform: social.platform)
-            method.contact = contact
-            contact.contactMethods?.append(method)
-        }
-
-        // Add addresses as locations if we have none
-        if (contact.locations ?? []).isEmpty {
-            for addr in pc.addresses where !addr.formatted.isEmpty {
-                let loc = Location(label: addr.label ?? "Address", address: addr.formatted)
-                loc.contact = contact
-                contact.locations?.append(loc)
-            }
-        }
-
-        // Update affiliations if we don't have any
-        if contact.affiliations.isEmpty && !pc.company.isEmpty {
-            contact.affiliations = [pc.company]
-        }
-
-        // Update notes if we don't have any
-        if contact.notes == nil && !pc.note.isEmpty {
-            contact.notes = pc.note
-        }
-
-        contact.updatedAt = Date()
     }
 }
