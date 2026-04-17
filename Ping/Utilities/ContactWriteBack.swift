@@ -27,8 +27,10 @@ final class ContactWriteBack {
     }
 
     /// Write a Ping contact back to the system Contacts app.
-    /// For linked contacts (importedContactID set), only adds new information —
-    /// never overwrites or removes existing system contact data.
+    /// For linked contacts (importedContactID set), overwrites names (first/last/nickname)
+    /// if they differ, and adds any new phones, emails, addresses, socials, photo, or
+    /// organization that the system contact is missing. Existing non-name data is never
+    /// removed or overwritten.
     /// For unlinked contacts, creates a new system contact.
     @discardableResult
     func writeBack(_ contact: Contact) throws -> String {
@@ -45,7 +47,7 @@ final class ContactWriteBack {
         }
     }
 
-    // MARK: - Add New Fields (additive only, never overwrites)
+    // MARK: - Add New Fields (overwrites names, additive for everything else)
 
     private func addNewFields(contactID: String, from contact: Contact) throws {
         let keysToFetch: [CNKeyDescriptor] = [
@@ -70,16 +72,16 @@ final class ContactWriteBack {
 
         var changed = false
         
-        // Add name pieces only if system contact doesn't have them
-        if mutable.givenName.isEmpty, !contact.firstName.isEmpty {
+        // Overwrite name pieces if they differ — matches pull-in semantics
+        if !contact.firstName.isEmpty, mutable.givenName != contact.firstName {
             mutable.givenName = contact.firstName
             changed = true
         }
-        if mutable.familyName.isEmpty, !contact.lastName.isEmpty {
+        if !contact.lastName.isEmpty, mutable.familyName != contact.lastName  {
             mutable.familyName = contact.lastName
             changed = true
         }
-        if mutable.nickname.isEmpty, let nickname = contact.nickname, !nickname.isEmpty {
+        if let nickname = contact.nickname, !nickname.isEmpty, mutable.nickname != nickname {
             mutable.nickname = nickname
             changed = true
         }

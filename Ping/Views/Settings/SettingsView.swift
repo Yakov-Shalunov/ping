@@ -132,7 +132,7 @@ struct SettingsView: View {
             }
             Button("Cancel", role: .cancel) { }
         } message: {
-            Text("This will add any new phone numbers, emails, addresses, and social links from Ping to your system Contacts. Existing data in Contacts will not be modified or removed. Contacts created only in Ping will be added to the Contacts app.")
+            Text("This will update names in your system Contacts to match Ping, and add any new phone numbers, emails, addresses, and social links from Ping. Other existing data in Contacts will not be modified or removed. Contacts created only in Ping will be added to the Contacts app.")
         }
     }
 
