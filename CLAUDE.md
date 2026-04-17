@@ -21,6 +21,10 @@ Both iOS and macOS SDKs are installed.
 
 **Known issue:** `.foregroundStyle(.accentColor)` doesn't compile — use `Color.accentColor` instead.
 
+## Workflow
+- When asked to build a feature, create a new git branch for it before starting work.
+- Commit frequently: whenever a coherent change has been made (a refactor finished, a bug fixed, a sub-feature working), make a commit rather than batching unrelated changes together.
+
 ## Architecture
 
 ### Data Model (SwiftData, all in `Ping/Models/`)
